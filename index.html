@@ -49,6 +49,7 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
 .ai{white-space:pre-wrap;line-height:1.55;font-size:14px}.note{padding:11px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:13px;margin-bottom:12px}
 .empty{text-align:center;color:var(--m);padding:24px}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.side{position:relative;height:auto;flex-direction:row;align-items:center;gap:8px;padding:8px;overflow-x:auto}.logo{padding:6px 8px;font-size:17px}.nav{display:flex;gap:3px}.nav button{width:auto;white-space:nowrap}.stats{grid-template-columns:repeat(2,1fr)}.two,.pos{grid-template-columns:1fr}.cart{position:relative;top:0}.main{padding:14px}}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;max-width:92%;padding:12px 16px;border-radius:12px;background:#111827;color:#fff;font-size:14px;display:none}#toast.show{display:block}#toast.err{background:#b91c1c}
 </style>
 </head>
 <body>
@@ -56,14 +57,11 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
   <div class="brand">BusinessOS</div><div class="muted">Point of Sale</div>
   <div class="tabs"><button id="tIn" class="on" onclick="tab('in')">Sign in</button><button id="tUp" onclick="tab('up')">Sign up</button></div>
   <div class="f hide" id="fStore"><label>Store name</label><input id="aStore" placeholder="My Coffee Shop"></div>
-  <div class="f"><label>Username</label><input id="aUser" autocomplete="username"></div>
+  <div class="f"><label>Email</label><input id="aUser" type="email" autocomplete="email" placeholder="you@example.com"></div>
   <div class="f"><label>Password</label><input id="aPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')auth()"></div>
   <div id="aErr" class="err"></div>
   <button class="btn dk w" id="aBtn" onclick="auth()">Sign in</button>
-  <details style="margin:10px 0"><summary class="muted" style="cursor:pointer;font-size:13px">☁ Cloud sync (GitHub gist)</summary>
-    <div class="f"><label>GitHub token (gist scope)</label><input id="lTok" type="password"></div><div class="f"><label>Gist ID (optional)</label><input id="lGist"></div>
-    <button class="btn w" onclick="connectCloud('l')">Connect</button><div id="lMsg" class="muted" style="font-size:12px;margin-top:6px"></div></details>
-    <p class="muted" style="font-size:12px">New here? Create the first account with Sign up. Passwords are stored hashed.</p>
+  <p class="muted" style="font-size:12px">New here? Choose Sign up. Your data is stored in your own private Supabase space; no other account can read it.</p>
 </div></div>
 
 <div id="app" class="layout hide">
@@ -71,7 +69,7 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
     <div class="nav" id="nav"></div>
     <button class="btn" onclick="logout()">Log out</button></aside>
   <main class="main">
-    <div class="top"><h2 id="title">Dashboard</h2><div><span class="pill" id="sync">Local only</span> <span class="pill" id="who"></span></div></div>
+    <div class="top"><h2 id="title">Dashboard</h2><div><span class="pill" id="sync">Loading…</span> <span class="pill" id="who"></span></div></div>
 
     <section id="dash" class="page on">
       <div class="tb"><select id="per" onchange="period=this.value;rDash()"></select>
@@ -104,9 +102,7 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
       <div class="row"><div class="f"><label>Currency</label><select id="sCur"><option>Rp</option><option>$</option><option>€</option><option>¥</option></select></div><div class="f"><label>Country code (WhatsApp)</label><input id="sCc"></div></div>
       <div class="f"><label>Owner WhatsApp number (for daily summaries)</label><input id="sOwn" placeholder="0812xxxxxxx"></div>
       <button class="btn dk" onclick="saveCfg()">Save</button>
-      <hr style="border:0;border-top:1px solid var(--b);margin:20px 0"><h3>Cloud sync (GitHub gist)</h3>
-      <div class="f"><label>GitHub token (classic, "gist" scope only)</label><input id="sTok" type="password"></div><div class="f"><label>Gist ID (leave empty to create/find automatically)</label><input id="sGist"></div>
-      <button class="btn dk" onclick="connectCloud('s')">Connect &amp; sync</button> <span id="sMsg" class="muted"></span>
+      <hr style="border:0;border-top:1px solid var(--b);margin:20px 0"><h3>Account &amp; cloud</h3><div class="muted" id="acct" style="margin-bottom:10px"></div><div class="f"><label>Import old data (JSON backup)</label><input type="file" id="impF" accept=".json" onchange="importFile(this)"></div><button class="btn" onclick="importLocal()">Import this browser's old local data</button>
       <hr style="border:0;border-top:1px solid var(--b);margin:20px 0"><h3>AI (Anthropic API)</h3>
       <div class="f"><label>API key</label><input id="sKey" type="password" placeholder="sk-ant-..."></div><div class="f"><label>Model</label><input id="sModel"></div>
       <button class="btn dk" onclick="saveAI()">Save AI settings</button> <span id="sKeyMsg" class="muted"></span>
@@ -115,16 +111,17 @@ table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;
       <button class="btn rd" onclick="reset()">Reset data</button></div></section>
   </main>
 </div>
+<div id="toast"></div>
 <div id="mb" class="mb" onclick="if(event.target===this)cm()"><div class="modal" id="modal"></div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 const $=i=>document.getElementById(i),LS="bos_v2",DAY=864e5;
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const seed=()=>({t:0,cfg:{name:"BusinessOS Store",cur:"Rp",cc:"62",owner:""},acc:[],
+const seed=()=>({cfg:{name:"BusinessOS Store",cur:"Rp",cc:"62",owner:""},
  prod:[["Classic Coffee","Drinks",25000,9000,30],["Milk Tea","Drinks",22000,8000,25],["Chicken Sandwich","Food",35000,16000,18],["Chocolate Cake","Food",30000,12000,12],["Mineral Water","Drinks",8000,3000,50]].map((p,i)=>({id:"p"+i,name:p[0],category:p[1],price:p[2],cost:p[3],stock:p[4]})),
  sales:[],cust:[],buys:[]});
-let S,cart=[],pay="Cash",me=null,mode="in",period="today",cloud=null,aiText="",saveT;
-try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}S=Object.assign(seed(),S||{});
+let S=seed(),cart=[],pay="Cash",me=null,mode="in",period="today",aiText="",saveT,dirty=false,busy=false,again=false,snap={};
 const money=n=>`${S.cfg.cur} ${Math.round(n||0).toLocaleString("id-ID")}`;
 const PER={today:"Today",yesterday:"Yesterday",week:"Last 7 days",lastweek:"Previous 7 days",month:"This month",lastmonth:"Last month",all:"All time"};
 const PREV={today:"yesterday",week:"lastweek",month:"lastmonth"};
@@ -134,37 +131,105 @@ function agg(p){const[a,b]=range(p),ss=S.sales.filter(s=>{const t=+new Date(s.da
  const rev=ss.reduce((x,s)=>x+s.total,0),cogs=ss.reduce((x,s)=>x+s.items.reduce((y,i)=>y+(i.cost||0)*i.qty,0),0),spent=bs.reduce((x,y)=>x+y.cost,0),opex=bs.filter(y=>y.type==="Expense").reduce((x,y)=>x+y.cost,0);
  const top={},pm={};ss.forEach(s=>{pm[s.payment]=(pm[s.payment]||0)+s.total;s.items.forEach(i=>{top[i.name]=top[i.name]||{q:0,r:0};top[i.name].q+=i.qty;top[i.name].r+=i.qty*i.price})});
  return{ss,bs,n:ss.length,rev,cogs,gross:rev-cogs,spent,opex,profit:rev-cogs-opex,cash:rev-spent,avg:ss.length?rev/ss.length:0,top:Object.entries(top).sort((x,y)=>y[1].r-x[1].r),pm}}
-/* ---------- storage + cloud (Claude runtime OR GitHub Gist) ---------- */
-const CK="bos_cloud",AK="bos_ai",hasC=typeof claude!=="undefined";let cl={},ai={model:"claude-sonnet-5-5"};
-try{cl=JSON.parse(localStorage.getItem(CK))||{};ai=Object.assign(ai,JSON.parse(localStorage.getItem(AK))||{})}catch(e){}
-const keep=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-const gh=(p,o={})=>fetch("https://api.github.com"+p,{...o,headers:{Authorization:"Bearer "+cl.token,Accept:"application/vnd.github+json"}}).then(async r=>{if(!r.ok)throw new Error("GitHub "+r.status+(r.status===401?" (bad token)":""));return r.json()});
-function save(){S.t=Date.now();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}clearTimeout(saveT);saveT=setTimeout(push,800)}
-async function push(){const sy=$("sync");try{if(cloud){sy.textContent="Saving…";await cloud.set({json:JSON.stringify(S),t:S.t})}else if(cl.token&&cl.gist){sy.textContent="Saving…";await gh("/gists/"+cl.gist,{method:"PATCH",body:JSON.stringify({files:{"businessos.json":{content:JSON.stringify(S)}}})})}else return;sy.textContent="☁ Synced"}catch(e){sy.textContent="Sync failed"}}
-async function pull(){let g;if(cl.gist)g=await gh("/gists/"+cl.gist);else{const l=await gh("/gists?per_page=100"),f=l.find(x=>x.files["businessos.json"]);g=f?await gh("/gists/"+f.id):await gh("/gists",{method:"POST",body:JSON.stringify({description:"BusinessOS POS data",public:false,files:{"businessos.json":{content:JSON.stringify(S)}}})});cl.gist=g.id;keep(CK,cl)}
- const f=g.files["businessos.json"];const c=JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content);if(c.t>S.t){S=Object.assign(seed(),c);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}else push();$("sync").textContent="☁ Synced"}
-async function initCloud(){try{if(hasC){const[db,u]=await Promise.all([claude.use("db"),claude.use("user")]);if(db&&u){cloud=db.doc("data/users/"+await u.id()+"/pos");const snap=await cloud.get();if(snap.exists){const c=JSON.parse(snap.data().json);if(c.t>S.t){S=Object.assign(seed(),c);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}else push()}else push();$("sync").textContent="☁ Synced";return}}
- if(cl.token)await pull()}catch(e){cloud=null;$("sync").textContent="Local only"}}
-let ready=initCloud();
-async function connectCloud(p){const t=$(p+"Tok").value.trim(),m=$(p+"Msg");if(!t)return;cl={token:t,gist:$(p+"Gist").value.trim()};keep(CK,cl);m.textContent="Connecting…";try{await pull();m.textContent="Connected ✓ (gist "+cl.gist.slice(0,6)+"…)";if(me)R();else tab(mode)}catch(e){m.textContent="Failed: "+e.message}}
-function saveAI(){ai={key:$("sKey").value.trim(),model:$("sModel").value.trim()||"claude-sonnet-5-5"};keep(AK,ai);$("sKeyMsg").textContent="Saved ✓"}
+/* ===== 1. SUPABASE CONFIGURATION ===== */
+// Paste your values from Supabase -> Project Settings -> API.
+// ONLY the public anon/publishable key belongs here. NEVER paste a service_role / secret key.
+const SUPABASE_URL="https://cejqzlgjmwghypbboksk.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY="sb_publishable__DGOWx7EFnQNf6hPMCrwRA_LAYZI0SO";
+let sb=null,cfgError="";
+(function(){const k=SUPABASE_ANON_KEY;
+ if(typeof supabase==="undefined")return cfgError="Could not load the Supabase library. Check your internet connection or ad-blocker.";
+ if(/YOUR-/.test(SUPABASE_URL+k))return cfgError="Supabase is not configured yet. Paste your Project URL and public anon key at the top of the script.";
+ let secret=/^sb_secret_/.test(k);try{secret=secret||/service_role/.test(atob(k.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")))}catch(e){}
+ if(secret)return cfgError="That is a secret/service-role key. Use the public anon (publishable) key only.";
+ try{sb=supabase.createClient(SUPABASE_URL,k,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){cfgError="Invalid Supabase settings: "+e.message}})();
+
+/* ===== local UI preferences only (AI settings). Business data is NOT stored in localStorage. ===== */
+const AK="bos_ai",hasC=typeof claude!=="undefined";let ai={model:"claude-sonnet-5-5"};
+try{ai=Object.assign(ai,JSON.parse(localStorage.getItem(AK))||{})}catch(e){}
+function saveAI(){ai={key:$("sKey").value.trim(),model:$("sModel").value.trim()||"claude-sonnet-5-5"};try{localStorage.setItem(AK,JSON.stringify(ai))}catch(e){}$("sKeyMsg").textContent="Saved ✓"}
+let toastT;function toast(m,k){const t=$("toast");t.textContent=m;t.className="show "+(k||"");clearTimeout(toastT);toastT=setTimeout(()=>t.className="",k==="err"?8000:3500)}
+const setSync=t=>{$("sync").textContent=t};
+const emsg=e=>/failed to fetch|networkerror|network request/i.test(e?.message||"")?"Cannot reach Supabase. Check your internet connection and the URL/key in the file.":(e?.message||String(e));
+
+/* ===== 3. DATABASE FUNCTIONS (S in memory <-> Supabase tables) ===== */
+const chk=r=>{if(r.error)throw r.error;return r};
+const cfgRow=()=>({user_id:me.id,store_name:S.cfg.name,currency:S.cfg.cur,country_code:S.cfg.cc,owner_whatsapp:S.cfg.owner||""});
+const rows={
+ products:()=>S.prod.map(p=>({id:p.id,name:p.name,category:p.category,price:p.price,cost:p.cost||0,stock:p.stock})),
+ customers:()=>S.cust.map(c=>({id:c.id,name:c.name,phone:c.phone||""})),
+ purchases:()=>S.buys.map(b=>({id:b.id,occurred_at:new Date(b.ts).toISOString(),type:b.type,name:b.name,qty:b.qty||0,cost:b.cost})),
+ orders:()=>S.sales.map(s=>({id:s.id,receipt:s.receipt,ordered_at:s.date,payment:s.payment,total:s.total,discount:s.discount||0,tax:s.tax||0,customer_id:s.cust||null,cashier:s.by||null}))};
+const mk=l=>new Map(l.map(r=>[r.id,JSON.stringify(r)]));
+const emptySnap=()=>({settings:"",products:new Map(),customers:new Map(),purchases:new Map(),orders:new Map()});
+const rebuildSnap=()=>{snap={settings:JSON.stringify(cfgRow()),products:mk(rows.products()),customers:mk(rows.customers()),purchases:mk(rows.purchases()),orders:mk(rows.orders())}};
+async function fetchAll(t,cols){let out=[],from=0;for(;;){let q=sb.from(t).select("*");for(const c of cols)q=q.order(c,{ascending:true});const{data,error}=await q.order("id",{ascending:true}).range(from,from+999);if(error)throw error;out=out.concat(data);if(data.length<1000)return out;from+=1000}}
+async function loadAll(){
+ const[st,pr,cu,pu,od,it]=await Promise.all([sb.from("pos_settings").select("*").maybeSingle(),fetchAll("products",["name"]),fetchAll("customers",["name"]),fetchAll("purchases",["occurred_at"]),fetchAll("orders",["ordered_at"]),fetchAll("order_items",[])]);
+ if(st.error)throw st.error;
+ if(!st.data){S=seed();if(me.meta.store_name)S.cfg.name=me.meta.store_name;snap=emptySnap();await pushAll();toast("Welcome! Your cloud database is ready.");return}
+ const items=new Map();it.forEach(i=>{if(!items.has(i.order_id))items.set(i.order_id,[]);items.get(i.order_id).push({id:i.product_id,name:i.name,price:+i.price,cost:+i.cost,qty:+i.qty})});
+ S={cfg:{name:st.data.store_name,cur:st.data.currency,cc:st.data.country_code,owner:st.data.owner_whatsapp||""},
+  prod:pr.map(p=>({id:p.id,name:p.name,category:p.category,price:+p.price,cost:+p.cost,stock:+p.stock})),
+  cust:cu.map(c=>({id:c.id,name:c.name,phone:c.phone||""})),
+  buys:pu.map(b=>({id:b.id,ts:Date.parse(b.occurred_at),type:b.type,name:b.name,qty:+b.qty,cost:+b.cost})),
+  sales:od.map(o=>({id:o.id,receipt:o.receipt,date:o.ordered_at,payment:o.payment,total:+o.total,discount:+o.discount,tax:+o.tax,cust:o.customer_id||"",by:o.cashier||"",items:items.get(o.id)||[]}))};
+ rebuildSnap();dirty=false}
+/* push only what changed since the last successful sync (upsert changed rows, delete removed rows) */
+async function diff(t,list,after){const m=snap[t],cur=new Map(list.map(r=>[r.id,JSON.stringify(r)])),del=[...m.keys()].filter(k=>!cur.has(k));
+ for(let i=0;i<del.length;i+=100){const part=del.slice(i,i+100);chk(await sb.from(t).delete().eq("user_id",me.id).in("id",part));part.forEach(k=>m.delete(k))}
+ const ch=list.filter(r=>m.get(r.id)!==cur.get(r.id));
+ for(let i=0;i<ch.length;i+=200){const part=ch.slice(i,i+200);chk(await sb.from(t).upsert(part.map(r=>({...r,user_id:me.id}))));if(after)await after(part);part.forEach(r=>m.set(r.id,cur.get(r.id)))}}
+async function pushAll(){const c=cfgRow(),cs=JSON.stringify(c);
+ if(snap.settings!==cs){chk(await sb.from("pos_settings").upsert(c));snap.settings=cs}
+ await diff("products",rows.products());await diff("customers",rows.customers());await diff("purchases",rows.purchases());
+ await diff("orders",rows.orders(),async part=>{const sm=new Map(S.sales.map(s=>[s.id,s]));
+  chk(await sb.from("order_items").delete().eq("user_id",me.id).in("order_id",part.map(r=>r.id)));
+  const its=part.flatMap(r=>sm.get(r.id).items.map(i=>({user_id:me.id,order_id:r.id,product_id:i.id,name:i.name,price:i.price,cost:i.cost||0,qty:i.qty})));
+  for(let i=0;i<its.length;i+=500)chk(await sb.from("order_items").insert(its.slice(i,i+500)))})}
+function save(){if(!sb||!me)return;dirty=true;clearTimeout(saveT);saveT=setTimeout(syncNow,600)}
+async function syncNow(){if(!sb||!me)return;if(busy){again=true;return}busy=true;setSync("Saving…");
+ try{do{again=false;await pushAll()}while(again);dirty=false;setSync("☁ Synced")}
+ catch(e){setSync("Sync failed");const m=emsg(e);toast(/jwt|401|not authenticated|session/i.test(m)?"Your session expired. Please log out and sign in again.":"Could not save to Supabase: "+m+" — will retry.","err");clearTimeout(saveT);saveT=setTimeout(syncNow,6000)}
+ finally{busy=false}}
+window.addEventListener("online",()=>{if(dirty)syncNow()});
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
+/* ---- import old data (JSON backup from the previous version, or old browser data) ---- */
+function importData(o){if(!o||!Array.isArray(o.prod)){return toast("This is not a valid BusinessOS backup.","err")}
+ const add=(a,b,ok)=>{const ids=new Set(a.map(x=>x.id));let n=0;(b||[]).filter(ok).forEach(x=>{if(!ids.has(x.id)){a.push(x);n++}});return n};
+ const n=add(S.prod,o.prod,x=>x.id&&x.name)+add(S.cust,o.cust,x=>x.id&&x.name)+add(S.sales,o.sales,x=>x.id&&Array.isArray(x.items))+add(S.buys,o.buys,x=>x.id&&x.ts);
+ S.sales.sort((a,b)=>a.date<b.date?-1:1);save();R();toast("Imported "+n+" records. Saving to Supabase…")}
+function importFile(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{importData(JSON.parse(r.result))}catch(e){toast("Could not read that file.","err")}};r.readAsText(f);inp.value=""}
+function importLocal(){try{const o=JSON.parse(localStorage.getItem(LS));if(!o)throw 0;importData(o)}catch(e){toast("No old local data found in this browser.","err")}}
+
 /* ---------- auth ---------- */
-function tab(m){mode=m;$("tIn").className=m==="in"?"on":"";$("tUp").className=m==="up"?"on":"";$("fStore").classList.toggle("hide",m==="in"||S.acc.length>0);$("aBtn").textContent=m==="in"?"Sign in":"Create account";$("aErr").textContent=""}
-const hash=async(p,s)=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s+p)))].map(x=>x.toString(16).padStart(2,"0")).join("");
-async function auth(){await ready;const u=$("aUser").value.trim().toLowerCase(),p=$("aPass").value,e=$("aErr");
- if(mode==="in"){const a=S.acc.find(x=>x.u===u);if(!a||await hash(p,a.s)!==a.h){e.textContent="Incorrect username or password.";return}return enter(a)}
- if(u.length<3)return e.textContent="Username needs 3+ characters.";if(p.length<6)return e.textContent="Password needs 6+ characters.";if(S.acc.find(x=>x.u===u))return e.textContent="Username already taken.";
- const s=crypto.randomUUID(),a={u,s,h:await hash(p,s),role:S.acc.length?"cashier":"admin"};if(!S.acc.length&&$("aStore").value.trim())S.cfg.name=$("aStore").value.trim();S.acc.push(a);save();enter(a)}
-function enter(a){me=a;try{sessionStorage.setItem("bos_u",a.u)}catch(e){}$("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent="● "+a.u+" ("+a.role+")";
+/* ===== 2. AUTHENTICATION (Supabase Auth) ===== */
+function tab(m){mode=m;$("tIn").className=m==="in"?"on":"";$("tUp").className=m==="up"?"on":"";$("fStore").classList.toggle("hide",m==="in");$("aBtn").textContent=m==="in"?"Sign in":"Create account";$("aErr").textContent="";$("aErr").style.color=""}
+async function auth(){const e=$("aErr");e.style.color="";if(!sb)return e.textContent=cfgError;
+ const em=$("aUser").value.trim().toLowerCase(),p=$("aPass").value;
+ if(!/^\S+@\S+\.\S+$/.test(em))return e.textContent="Enter a valid email address.";if(p.length<6)return e.textContent="Password needs 6+ characters.";
+ $("aBtn").disabled=true;e.textContent="";
+ try{if(mode==="in"){const{data,error}=await sb.auth.signInWithPassword({email:em,password:p});if(error)throw error;await boot(data.user)}
+  else{const{data,error}=await sb.auth.signUp({email:em,password:p,options:{data:{store_name:$("aStore").value.trim()}}});if(error)throw error;
+   if(data.user&&data.user.identities&&data.user.identities.length===0)throw new Error("This email is already registered. Try signing in.");
+   if(data.session)await boot(data.user);else{tab("in");e.style.color="var(--g)";e.textContent="Account created. Check your email to confirm it, then sign in."}}}
+ catch(x){e.textContent=emsg(x)}finally{$("aBtn").disabled=false}}
+async function boot(user){me={u:user.email,id:user.id,role:"owner",meta:user.user_metadata||{}};
+ try{setSync("Loading…");await loadAll();enter(me);setSync("☁ Synced")}
+ catch(x){me=null;$("aErr").style.color="";$("aErr").textContent="Could not load your data: "+emsg(x)+" (reload to retry)";toast("Could not load your data: "+emsg(x),"err")}}
+async function init(){tab("in");if(!sb){$("aErr").textContent=cfgError;return}
+ try{const{data,error}=await sb.auth.getSession();if(error)throw error;if(data.session)await boot(data.session.user)}catch(x){$("aErr").textContent=emsg(x)}
+ sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&me){me=null;location.reload()}})}
+function enter(a){me=a;$("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent="● "+a.u+" ("+a.role+")";
  $("per").innerHTML=Object.entries(PER).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");$("per").value=period;
  $("nav").innerHTML=[["dash","Dashboard"],["pos","Point of Sale"],["products","Products"],["buys","Purchases"],["sales","Sales"],["customers","Customers"],["settings","Settings"]].map(([k,v],i)=>`<button data-p="${k}" class="${i?"":"on"}" onclick="go('${k}')">${v}</button>`).join("");
  $("pg").innerHTML=["Cash","QRIS","Card","Other"].map(x=>`<button onclick="pay='${x}';rPay()">${x}</button>`).join("");rPay();R()}
-function logout(){try{sessionStorage.removeItem("bos_u")}catch(e){}location.reload()}
+async function logout(){clearTimeout(saveT);if(dirty)await syncNow();if(dirty&&!confirm("Some changes are not saved to Supabase yet. Log out anyway?"))return;try{await sb.auth.signOut()}catch(e){}location.reload()}
 function go(p){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id===p));document.querySelectorAll("#nav button").forEach(x=>{x.classList.toggle("on",x.dataset.p===p);if(x.dataset.p===p)$("title").textContent=x.textContent});R()}
-/* ---------- render ---------- */
+/* ===== UI + PRODUCT / INVENTORY / ORDER FUNCTIONS (logic unchanged) ===== */
 const tr=(c,n)=>c.length?c.join(""):`<tr><td colspan="${n}" class="empty">Nothing here yet.</td></tr>`;
 function R(){rDash();rPOS();rProd();rBuys();rSales();rCust();$("cs").innerHTML='<option value="">Walk-in</option>'+S.cust.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
- $("sName").value=S.cfg.name;$("sCur").value=S.cfg.cur;$("sCc").value=S.cfg.cc;$("sOwn").value=S.cfg.owner;$("cloudNote").textContent=(cloud||cl.gist)?"Cloud memory is on: your data is synced and available on any device you connect.":"Cloud memory is off: data is saved in this browser only. Connect a GitHub gist below.";$("sTok").value=cl.token||"";$("sGist").value=cl.gist||"";$("sKey").value=ai.key||"";$("sModel").value=ai.model}
+ $("sName").value=S.cfg.name;$("sCur").value=S.cfg.cur;$("sCc").value=S.cfg.cc;$("sOwn").value=S.cfg.owner;$("cloudNote").textContent="Your data is stored in your private Supabase database. Row Level Security means only your account can read or change it.";$("acct").textContent="Signed in as "+me.u;$("sKey").value=ai.key||"";$("sModel").value=ai.model}
 function dlt(a,b){if(!b)return"";const p=(a-b)/Math.abs(b)*100;return`<div class="dl ${p>=0?"up":"dn"}">${p>=0?"▲":"▼"} ${Math.abs(p).toFixed(0)}% vs ${PER[PREV[period]].toLowerCase()}</div>`}
 function rDash(){const A=agg(period),P=PREV[period]?agg(PREV[period]):null,low=S.prod.filter(p=>p.stock<=5);
  const c=(l,v,d="",cl="")=>`<div class="card"><div class="sl">${l}</div><div class="sv ${cl}">${v}</div>${d}</div>`;
@@ -203,7 +268,7 @@ function custModal(){md(`<div class="mh"><h3>Add customer</h3><button class="x" 
 function saveCust(){const n=$("cN").value.trim();if(!n)return;S.cust.push({id:"c"+Date.now(),name:n,phone:$("cP").value.trim()});save();cm();R()}
 function delCust(id){if(confirm("Delete customer?")){S.cust=S.cust.filter(c=>c.id!==id);save();R()}}
 function saveCfg(){Object.assign(S.cfg,{name:$("sName").value.trim()||"BusinessOS Store",cur:$("sCur").value,cc:$("sCc").value.replace(/\D/g,"")||"62",owner:$("sOwn").value.trim()});save();R()}
-function reset(){if(confirm("Erase all products, sales, purchases and customers? Accounts are kept.")){const a=S.acc,c=S.cfg;S=Object.assign(seed(),{acc:a,cfg:c});save();R()}}
+function reset(){if(confirm("Erase all products, sales, purchases and customers from your cloud database? Your login is kept.")){const c=S.cfg;S=Object.assign(seed(),{cfg:c});save();R()}}
 /* ---------- WhatsApp ---------- */
 const TPL={thanks:(c,n)=>`Hi ${c}! Thank you for shopping at ${n} 😊 We hope to see you again soon.`,promo:(c,n)=>`Hi ${c}! ${n} has a special offer this week — drop by and enjoy a discount on your favourites! 🎉`,remind:(c,n)=>`Hi ${c}, a friendly reminder from ${n} about your pending payment. Please let us know if you have any questions. Thank you!`,restock:(c,n)=>`Hi ${c}! Good news — new stock just arrived at ${n}. Come take a look! 🛍️`};
 function waModal(cid,text){const c=S.cust.find(x=>x.id===cid);window._wt=text;
@@ -228,7 +293,7 @@ const csv=()=>"Date,Receipt,Payment,Total,Cost\n"+S.sales.map(s=>`${s.date},${s.
 async function exp(name,data,l){const d=hasC?await claude.use("downloads").catch(()=>null):null;if(d){try{await d.save({filename:name,data})}catch(e){}return}
  if(!hasC){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data]));a.download=name;a.click();return}md(`<div class="mh"><h3>${l} export</h3><button class="x" onclick="cm()">×</button></div><textarea rows="12" readonly>${esc(data)}</textarea>`)}
 function md(h){$("modal").innerHTML=h;$("mb").classList.add("show")}function cm(){$("mb").classList.remove("show")}
-tab("in");try{const u=sessionStorage.getItem("bos_u");if(u)ready.then(()=>{const a=S.acc.find(x=>x.u===u);if(a)enter(a)})}catch(e){}
+init();
 </script>
 </body>
 </html>
