@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BusinessOS POS</title>
+<style>
+:root{--bg:#f4f6f8;--c:#fff;--t:#17202a;--m:#78838f;--b:#e4e8ec;--d:#111827;--dt:#fff;--sb:#111827;--g:#16a34a;--r:#dc2626;--h:#eef1f4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e131a;--c:#18212b;--t:#e6ebf0;--m:#8c99a6;--b:#2a3541;--d:#3b82f6;--sb:#0a0e13;--h:#243040}}
+:root[data-theme="dark"]{--bg:#0e131a;--c:#18212b;--t:#e6ebf0;--m:#8c99a6;--b:#2a3541;--d:#3b82f6;--sb:#0a0e13;--h:#243040}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--t)}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;border:0}
+.muted{color:var(--m)}.hide{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#111827,#273449);padding:16px}
+.lc{width:min(420px,100%);background:var(--c);border-radius:22px;padding:30px}
+.brand{font-size:25px;font-weight:800}.tabs{display:flex;gap:6px;margin:16px 0}.tabs button{flex:1;padding:10px;border-radius:10px;background:var(--h);font-weight:700}.tabs button.on{background:var(--d);color:var(--dt)}
+.f{margin:12px 0}.f label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select,textarea{width:100%;padding:11px 13px;border:1px solid var(--b);border-radius:10px;background:var(--c);outline:none}
+.err{color:var(--r);font-size:13px;min-height:18px}
+.btn{padding:10px 14px;border-radius:9px;background:var(--h);font-weight:700}.btn.dk{background:var(--d);color:var(--dt)}.btn.gr{background:var(--g);color:#fff}.btn.rd{background:#fee2e2;color:#b91c1c}.btn.w{width:100%}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.side{background:var(--sb);color:#cbd5e1;padding:20px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+.logo{padding:6px 10px 20px;color:#fff;font-size:20px;font-weight:800}
+.nav{flex:1}.nav button{width:100%;background:transparent;color:#cbd5e1;text-align:left;padding:11px;border-radius:9px;margin:2px 0}.nav button:hover,.nav button.on{background:#273449;color:#fff}
+.main{padding:22px;max-width:1500px;width:100%;margin:auto;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}.top h2{margin:0}
+.pill{background:var(--c);border:1px solid var(--b);border-radius:999px;padding:6px 12px;font-size:13px}
+.page{display:none}.page.on{display:block}
+.grid{display:grid;gap:14px}.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:2fr 1fr}
+.card{background:var(--c);border:1px solid var(--b);border-radius:16px;padding:18px;min-width:0}.card h3{margin:0 0 12px}
+.sl{font-size:13px;color:var(--m)}.sv{font-size:24px;font-weight:800;margin-top:5px}.dl{font-size:12px;margin-top:3px}.up{color:var(--g)}.dn{color:var(--r)}
+.tb{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.tb input,.tb select{max-width:300px}
+.tw{overflow-x:auto;background:var(--c);border:1px solid var(--b);border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:620px}th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--b);font-size:14px}th{font-size:12px;color:var(--m)}
+.pos{display:grid;grid-template-columns:1fr 360px;gap:16px}.prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.prod{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:13px;text-align:left}.prod:disabled{opacity:.45}.prod b{display:block;margin:6px 0 3px}
+.cart{position:sticky;top:16px;height:max-content}.ci{max-height:300px;overflow:auto}
+.cr{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--b)}
+.q{display:flex;align-items:center;gap:6px}.q button{width:26px;height:26px;border-radius:6px;background:var(--h)}
+.sum{display:flex;justify-content:space-between;padding:4px 0}.tot{font-size:20px;font-weight:800;border-top:1px solid var(--b);margin-top:6px;padding-top:10px}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}.pg button{padding:9px 4px;border-radius:8px;background:var(--h);font-size:13px}.pg button.on{background:var(--d);color:var(--dt)}
+.mb{display:none;position:fixed;inset:0;background:#0008;place-items:center;padding:16px;z-index:10}.mb.show{display:grid}
+.modal{background:var(--c);border-radius:18px;width:min(560px,100%);max-height:90vh;overflow:auto;padding:22px}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mh h3{margin:0}.x{width:32px;height:32px;border-radius:50%;background:var(--h)}
+.rcp{font-family:ui-monospace,monospace;white-space:pre-wrap;background:var(--bg);padding:14px;border-radius:10px;font-size:13px}
+.row{display:flex;gap:10px}.row>*{flex:1}.bg{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#e8f7ed;color:#15803d}.bg.lo{background:#fff3cd;color:#9a6700}
+.bar{display:flex;align-items:flex-end;gap:8px;height:170px}.bar div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--m)}.bar i{display:block;width:100%;background:var(--d);border-radius:6px 6px 0 0;min-height:2px}
+.ai{white-space:pre-wrap;line-height:1.55;font-size:14px}.note{padding:11px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:13px;margin-bottom:12px}
+.empty{text-align:center;color:var(--m);padding:24px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.side{position:relative;height:auto;flex-direction:row;align-items:center;gap:8px;padding:8px;overflow-x:auto}.logo{padding:6px 8px;font-size:17px}.nav{display:flex;gap:3px}.nav button{width:auto;white-space:nowrap}.stats{grid-template-columns:repeat(2,1fr)}.two,.pos{grid-template-columns:1fr}.cart{position:relative;top:0}.main{padding:14px}}
+</style>
+</head>
+<body>
+<div id="login" class="login"><div class="lc">
+  <div class="brand">BusinessOS</div><div class="muted">Point of Sale</div>
+  <div class="tabs"><button id="tIn" class="on" onclick="tab('in')">Sign in</button><button id="tUp" onclick="tab('up')">Sign up</button></div>
+  <div class="f hide" id="fStore"><label>Store name</label><input id="aStore" placeholder="My Coffee Shop"></div>
+  <div class="f"><label>Username</label><input id="aUser" autocomplete="username"></div>
+  <div class="f"><label>Password</label><input id="aPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')auth()"></div>
+  <div id="aErr" class="err"></div>
+  <button class="btn dk w" id="aBtn" onclick="auth()">Sign in</button>
+  <details style="margin:10px 0"><summary class="muted" style="cursor:pointer;font-size:13px">☁ Cloud sync (GitHub gist)</summary>
+    <div class="f"><label>GitHub token (gist scope)</label><input id="lTok" type="password"></div><div class="f"><label>Gist ID (optional)</label><input id="lGist"></div>
+    <button class="btn w" onclick="connectCloud('l')">Connect</button><div id="lMsg" class="muted" style="font-size:12px;margin-top:6px"></div></details>
+    <p class="muted" style="font-size:12px">New here? Create the first account with Sign up. Passwords are stored hashed.</p>
+</div></div>
+
+<div id="app" class="layout hide">
+  <aside class="side"><div class="logo">BusinessOS</div>
+    <div class="nav" id="nav"></div>
+    <button class="btn" onclick="logout()">Log out</button></aside>
+  <main class="main">
+    <div class="top"><h2 id="title">Dashboard</h2><div><span class="pill" id="sync">Local only</span> <span class="pill" id="who"></span></div></div>
+
+    <section id="dash" class="page on">
+      <div class="tb"><select id="per" onchange="period=this.value;rDash()"></select>
+        <button class="btn dk" onclick="runAI()">✨ AI summary</button><button class="btn gr" onclick="waSummary()">WhatsApp summary</button></div>
+      <div class="grid stats" id="stats"></div>
+      <div id="aiBox" class="card hide" style="margin-top:14px"><h3>AI summary</h3><div id="aiTxt" class="ai"></div><div style="margin-top:10px"><button class="btn gr" onclick="waSummary(aiText)">Send via WhatsApp</button></div></div>
+      <div class="grid two" style="margin-top:14px"><div class="card"><h3>Revenue · last 7 days</h3><div class="bar" id="chart"></div></div><div class="card"><h3>Top items</h3><div id="top"></div></div></div>
+      <div class="grid two" style="margin-top:14px"><div class="card"><h3>History (cloud memory)</h3><div class="tw" style="border:0"><table><thead><tr><th>Period</th><th>Sales</th><th>Txns</th><th>Profit</th></tr></thead><tbody id="hist"></tbody></table></div></div><div class="card"><h3>Payments &amp; stock</h3><div id="pm"></div></div></div>
+    </section>
+
+    <section id="pos" class="page"><div class="pos"><div>
+      <div class="tb"><input id="ps" placeholder="Search products..." oninput="rPOS()"></div><div id="pgrid" class="prods"></div></div>
+      <div class="card cart"><h3>Current order</h3><div id="ci" class="ci"></div>
+        <div class="sum"><span>Subtotal</span><span id="sub"></span></div><div class="sum"><span>Discount</span><span id="dis"></span></div><div class="sum"><span>Tax</span><span id="txt"></span></div><div class="sum tot"><span>Total</span><span id="tot"></span></div>
+        <div class="row"><div class="f"><label>Discount</label><input id="disc" type="number" min="0" value="0" oninput="rCart()"></div><div class="f"><label>Tax %</label><input id="taxp" type="number" min="0" max="100" value="0" oninput="rCart()"></div></div>
+        <div class="f"><label>Customer</label><select id="cs"></select></div>
+        <div class="pg" id="pg"></div><button class="btn dk w" onclick="checkout()">Complete sale</button></div></div></section>
+
+    <section id="products" class="page"><div class="tb"><input id="prs" placeholder="Search..." oninput="rProd()"><button class="btn dk" onclick="prodModal()">+ Product</button></div><div class="tw"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Cost</th><th>Stock</th><th></th></tr></thead><tbody id="ptb"></tbody></table></div></section>
+
+    <section id="buys" class="page"><div class="tb"><button class="btn dk" onclick="buyModal()">+ Purchase / expense</button></div><div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Cost</th><th></th></tr></thead><tbody id="btb"></tbody></table></div></section>
+
+    <section id="sales" class="page"><div class="tb"><input id="ss" placeholder="Search receipt / payment..." oninput="rSales()"><button class="btn" onclick="exp('sales.csv',csv(),'CSV')">Export CSV</button></div><div class="tw"><table><thead><tr><th>Date</th><th>Receipt</th><th>Items</th><th>Payment</th><th>Total</th><th></th></tr></thead><tbody id="stb"></tbody></table></div></section>
+
+    <section id="customers" class="page"><div class="tb"><button class="btn dk" onclick="custModal()">+ Customer</button><button class="btn gr" onclick="waModal('')">New WhatsApp message</button></div><div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Spent</th><th></th></tr></thead><tbody id="ctb"></tbody></table></div></section>
+
+    <section id="settings" class="page"><div class="card" style="max-width:640px"><h3>Settings</h3>
+      <div class="note" id="cloudNote"></div>
+      <div class="f"><label>Store name</label><input id="sName"></div>
+      <div class="row"><div class="f"><label>Currency</label><select id="sCur"><option>Rp</option><option>$</option><option>€</option><option>¥</option></select></div><div class="f"><label>Country code (WhatsApp)</label><input id="sCc"></div></div>
+      <div class="f"><label>Owner WhatsApp number (for daily summaries)</label><input id="sOwn" placeholder="0812xxxxxxx"></div>
+      <button class="btn dk" onclick="saveCfg()">Save</button>
+      <hr style="border:0;border-top:1px solid var(--b);margin:20px 0"><h3>Cloud sync (GitHub gist)</h3>
+      <div class="f"><label>GitHub token (classic, "gist" scope only)</label><input id="sTok" type="password"></div><div class="f"><label>Gist ID (leave empty to create/find automatically)</label><input id="sGist"></div>
+      <button class="btn dk" onclick="connectCloud('s')">Connect &amp; sync</button> <span id="sMsg" class="muted"></span>
+      <hr style="border:0;border-top:1px solid var(--b);margin:20px 0"><h3>AI (Anthropic API)</h3>
+      <div class="f"><label>API key</label><input id="sKey" type="password" placeholder="sk-ant-..."></div><div class="f"><label>Model</label><input id="sModel"></div>
+      <button class="btn dk" onclick="saveAI()">Save AI settings</button> <span id="sKeyMsg" class="muted"></span>
+      <hr style="border:0;border-top:1px solid var(--b);margin:20px 0">
+      <button class="btn" onclick="exp('businessos-backup.json',JSON.stringify(S,null,2),'JSON')">Download backup</button>
+      <button class="btn rd" onclick="reset()">Reset data</button></div></section>
+  </main>
+</div>
+<div id="mb" class="mb" onclick="if(event.target===this)cm()"><div class="modal" id="modal"></div></div>
+
+<script>
+const $=i=>document.getElementById(i),LS="bos_v2",DAY=864e5;
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const seed=()=>({t:0,cfg:{name:"BusinessOS Store",cur:"Rp",cc:"62",owner:""},acc:[],
+ prod:[["Classic Coffee","Drinks",25000,9000,30],["Milk Tea","Drinks",22000,8000,25],["Chicken Sandwich","Food",35000,16000,18],["Chocolate Cake","Food",30000,12000,12],["Mineral Water","Drinks",8000,3000,50]].map((p,i)=>({id:"p"+i,name:p[0],category:p[1],price:p[2],cost:p[3],stock:p[4]})),
+ sales:[],cust:[],buys:[]});
+let S,cart=[],pay="Cash",me=null,mode="in",period="today",cloud=null,aiText="",saveT;
+try{S=JSON.parse(localStorage.getItem(LS))}catch(e){}S=Object.assign(seed(),S||{});
+const money=n=>`${S.cfg.cur} ${Math.round(n||0).toLocaleString("id-ID")}`;
+const PER={today:"Today",yesterday:"Yesterday",week:"Last 7 days",lastweek:"Previous 7 days",month:"This month",lastmonth:"Last month",all:"All time"};
+const PREV={today:"yesterday",week:"lastweek",month:"lastmonth"};
+function range(p){const d=new Date();d.setHours(0,0,0,0);const z=+d,m=new Date(d.getFullYear(),d.getMonth(),1);
+ return{today:[z,z+DAY],yesterday:[z-DAY,z],week:[z-6*DAY,z+DAY],lastweek:[z-13*DAY,z-6*DAY],month:[+m,+new Date(d.getFullYear(),d.getMonth()+1,1)],lastmonth:[+new Date(d.getFullYear(),d.getMonth()-1,1),+m],all:[0,9e15]}[p]}
+function agg(p){const[a,b]=range(p),ss=S.sales.filter(s=>{const t=+new Date(s.date);return t>=a&&t<b}),bs=S.buys.filter(x=>x.ts>=a&&x.ts<b);
+ const rev=ss.reduce((x,s)=>x+s.total,0),cogs=ss.reduce((x,s)=>x+s.items.reduce((y,i)=>y+(i.cost||0)*i.qty,0),0),spent=bs.reduce((x,y)=>x+y.cost,0),opex=bs.filter(y=>y.type==="Expense").reduce((x,y)=>x+y.cost,0);
+ const top={},pm={};ss.forEach(s=>{pm[s.payment]=(pm[s.payment]||0)+s.total;s.items.forEach(i=>{top[i.name]=top[i.name]||{q:0,r:0};top[i.name].q+=i.qty;top[i.name].r+=i.qty*i.price})});
+ return{ss,bs,n:ss.length,rev,cogs,gross:rev-cogs,spent,opex,profit:rev-cogs-opex,cash:rev-spent,avg:ss.length?rev/ss.length:0,top:Object.entries(top).sort((x,y)=>y[1].r-x[1].r),pm}}
+/* ---------- storage + cloud (Claude runtime OR GitHub Gist) ---------- */
+const CK="bos_cloud",AK="bos_ai",hasC=typeof claude!=="undefined";let cl={},ai={model:"claude-sonnet-5-5"};
+try{cl=JSON.parse(localStorage.getItem(CK))||{};ai=Object.assign(ai,JSON.parse(localStorage.getItem(AK))||{})}catch(e){}
+const keep=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const gh=(p,o={})=>fetch("https://api.github.com"+p,{...o,headers:{Authorization:"Bearer "+cl.token,Accept:"application/vnd.github+json"}}).then(async r=>{if(!r.ok)throw new Error("GitHub "+r.status+(r.status===401?" (bad token)":""));return r.json()});
+function save(){S.t=Date.now();try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}clearTimeout(saveT);saveT=setTimeout(push,800)}
+async function push(){const sy=$("sync");try{if(cloud){sy.textContent="Saving…";await cloud.set({json:JSON.stringify(S),t:S.t})}else if(cl.token&&cl.gist){sy.textContent="Saving…";await gh("/gists/"+cl.gist,{method:"PATCH",body:JSON.stringify({files:{"businessos.json":{content:JSON.stringify(S)}}})})}else return;sy.textContent="☁ Synced"}catch(e){sy.textContent="Sync failed"}}
+async function pull(){let g;if(cl.gist)g=await gh("/gists/"+cl.gist);else{const l=await gh("/gists?per_page=100"),f=l.find(x=>x.files["businessos.json"]);g=f?await gh("/gists/"+f.id):await gh("/gists",{method:"POST",body:JSON.stringify({description:"BusinessOS POS data",public:false,files:{"businessos.json":{content:JSON.stringify(S)}}})});cl.gist=g.id;keep(CK,cl)}
+ const f=g.files["businessos.json"];const c=JSON.parse(f.truncated?await(await fetch(f.raw_url)).text():f.content);if(c.t>S.t){S=Object.assign(seed(),c);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}else push();$("sync").textContent="☁ Synced"}
+async function initCloud(){try{if(hasC){const[db,u]=await Promise.all([claude.use("db"),claude.use("user")]);if(db&&u){cloud=db.doc("data/users/"+await u.id()+"/pos");const snap=await cloud.get();if(snap.exists){const c=JSON.parse(snap.data().json);if(c.t>S.t){S=Object.assign(seed(),c);try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}else push()}else push();$("sync").textContent="☁ Synced";return}}
+ if(cl.token)await pull()}catch(e){cloud=null;$("sync").textContent="Local only"}}
+let ready=initCloud();
+async function connectCloud(p){const t=$(p+"Tok").value.trim(),m=$(p+"Msg");if(!t)return;cl={token:t,gist:$(p+"Gist").value.trim()};keep(CK,cl);m.textContent="Connecting…";try{await pull();m.textContent="Connected ✓ (gist "+cl.gist.slice(0,6)+"…)";if(me)R();else tab(mode)}catch(e){m.textContent="Failed: "+e.message}}
+function saveAI(){ai={key:$("sKey").value.trim(),model:$("sModel").value.trim()||"claude-sonnet-5-5"};keep(AK,ai);$("sKeyMsg").textContent="Saved ✓"}
+/* ---------- auth ---------- */
+function tab(m){mode=m;$("tIn").className=m==="in"?"on":"";$("tUp").className=m==="up"?"on":"";$("fStore").classList.toggle("hide",m==="in"||S.acc.length>0);$("aBtn").textContent=m==="in"?"Sign in":"Create account";$("aErr").textContent=""}
+const hash=async(p,s)=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s+p)))].map(x=>x.toString(16).padStart(2,"0")).join("");
+async function auth(){await ready;const u=$("aUser").value.trim().toLowerCase(),p=$("aPass").value,e=$("aErr");
+ if(mode==="in"){const a=S.acc.find(x=>x.u===u);if(!a||await hash(p,a.s)!==a.h){e.textContent="Incorrect username or password.";return}return enter(a)}
+ if(u.length<3)return e.textContent="Username needs 3+ characters.";if(p.length<6)return e.textContent="Password needs 6+ characters.";if(S.acc.find(x=>x.u===u))return e.textContent="Username already taken.";
+ const s=crypto.randomUUID(),a={u,s,h:await hash(p,s),role:S.acc.length?"cashier":"admin"};if(!S.acc.length&&$("aStore").value.trim())S.cfg.name=$("aStore").value.trim();S.acc.push(a);save();enter(a)}
+function enter(a){me=a;try{sessionStorage.setItem("bos_u",a.u)}catch(e){}$("login").classList.add("hide");$("app").classList.remove("hide");$("who").textContent="● "+a.u+" ("+a.role+")";
+ $("per").innerHTML=Object.entries(PER).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");$("per").value=period;
+ $("nav").innerHTML=[["dash","Dashboard"],["pos","Point of Sale"],["products","Products"],["buys","Purchases"],["sales","Sales"],["customers","Customers"],["settings","Settings"]].map(([k,v],i)=>`<button data-p="${k}" class="${i?"":"on"}" onclick="go('${k}')">${v}</button>`).join("");
+ $("pg").innerHTML=["Cash","QRIS","Card","Other"].map(x=>`<button onclick="pay='${x}';rPay()">${x}</button>`).join("");rPay();R()}
+function logout(){try{sessionStorage.removeItem("bos_u")}catch(e){}location.reload()}
+function go(p){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id===p));document.querySelectorAll("#nav button").forEach(x=>{x.classList.toggle("on",x.dataset.p===p);if(x.dataset.p===p)$("title").textContent=x.textContent});R()}
+/* ---------- render ---------- */
+const tr=(c,n)=>c.length?c.join(""):`<tr><td colspan="${n}" class="empty">Nothing here yet.</td></tr>`;
+function R(){rDash();rPOS();rProd();rBuys();rSales();rCust();$("cs").innerHTML='<option value="">Walk-in</option>'+S.cust.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+ $("sName").value=S.cfg.name;$("sCur").value=S.cfg.cur;$("sCc").value=S.cfg.cc;$("sOwn").value=S.cfg.owner;$("cloudNote").textContent=(cloud||cl.gist)?"Cloud memory is on: your data is synced and available on any device you connect.":"Cloud memory is off: data is saved in this browser only. Connect a GitHub gist below.";$("sTok").value=cl.token||"";$("sGist").value=cl.gist||"";$("sKey").value=ai.key||"";$("sModel").value=ai.model}
+function dlt(a,b){if(!b)return"";const p=(a-b)/Math.abs(b)*100;return`<div class="dl ${p>=0?"up":"dn"}">${p>=0?"▲":"▼"} ${Math.abs(p).toFixed(0)}% vs ${PER[PREV[period]].toLowerCase()}</div>`}
+function rDash(){const A=agg(period),P=PREV[period]?agg(PREV[period]):null,low=S.prod.filter(p=>p.stock<=5);
+ const c=(l,v,d="",cl="")=>`<div class="card"><div class="sl">${l}</div><div class="sv ${cl}">${v}</div>${d}</div>`;
+ $("stats").innerHTML=c("Sales",money(A.rev),dlt(A.rev,P?.rev))+c(A.profit<0?"Net loss":"Net profit",money(A.profit),`<div class="dl muted">Gross ${money(A.gross)} − expenses ${money(A.opex)}</div>`,A.profit<0?"dn":"up")+c("Transactions",A.n,dlt(A.n,P?.n))+c("Avg order",money(A.avg))+c("Cost of goods",money(A.cogs))+c("Bought / spent",money(A.spent),`<div class="dl muted">${A.bs.length} purchases</div>`)+c("Cash result",money(A.cash),'<div class="dl muted">Sales − all spending</div>',A.cash<0?"dn":"")+c("Low stock",low.length,`<div class="dl muted">${low.map(p=>esc(p.name)).slice(0,2).join(", ")}</div>`);
+ const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);const a=+d-(6-i)*DAY,v=S.sales.filter(s=>{const t=+new Date(s.date);return t>=a&&t<a+DAY}).reduce((x,s)=>x+s.total,0);return[new Date(a).toLocaleDateString(undefined,{weekday:"short"}),v]}),mx=Math.max(1,...days.map(x=>x[1]));
+ $("chart").innerHTML=days.map(([l,v])=>`<div title="${money(v)}"><i style="height:${v/mx*140}px"></i>${l}</div>`).join("");
+ $("top").innerHTML=A.top.slice(0,6).map(([n,x])=>`<div class="sum"><span>${esc(n)} ×${x.q}</span><b>${money(x.r)}</b></div>`).join("")||'<div class="empty">No sales.</div>';
+ $("hist").innerHTML=["today","yesterday","week","lastweek","month","lastmonth","all"].map(k=>{const a=agg(k);return`<tr><td>${PER[k]}</td><td>${money(a.rev)}</td><td>${a.n}</td><td class="${a.profit<0?"dn":""}">${money(a.profit)}</td></tr>`}).join("");
+ $("pm").innerHTML=Object.entries(A.pm).map(([k,v])=>`<div class="sum"><span>${k}</span><b>${money(v)}</b></div>`).join("")||'<div class="muted">No payments.</div>';
+ $("pm").innerHTML+=`<hr style="border:0;border-top:1px solid var(--b)"><b>Low stock</b>`+(low.map(p=>`<div class="sum"><span>${esc(p.name)}</span><span>${p.stock}</span></div>`).join("")||'<div class="muted">All good.</div>')}
+function rPay(){[...$("pg").children].forEach(b=>b.classList.toggle("on",b.textContent===pay))}
+function rPOS(){const q=$("ps").value.toLowerCase();$("pgrid").innerHTML=S.prod.filter(p=>(p.name+p.category).toLowerCase().includes(q)).map(p=>`<button class="prod" ${p.stock<=0?"disabled":""} onclick="add('${p.id}')"><span class="muted" style="font-size:12px">${esc(p.category)}</span><b>${esc(p.name)}</b>${money(p.price)}<div class="muted" style="font-size:12px">${p.stock} in stock</div></button>`).join("")||'<div class="empty">No products.</div>';rCart()}
+const P=id=>S.prod.find(p=>p.id===id);
+function add(id){const p=P(id),x=cart.find(c=>c.id===id);if(x){if(x.q<p.stock)x.q++}else cart.push({id,q:1});rCart()}
+function qty(id,d){const x=cart.find(c=>c.id===id);x.q=Math.min(x.q+d,P(id).stock);if(x.q<=0)cart=cart.filter(c=>c.id!==id);rCart()}
+function calc(){const sub=cart.reduce((a,x)=>a+P(x.id).price*x.q,0),dis=Math.min(+$("disc").value||0,sub),tx=(sub-dis)*(+$("taxp").value||0)/100;return{sub,dis,tx,total:sub-dis+tx}}
+function rCart(){$("ci").innerHTML=cart.map(x=>{const p=P(x.id);return`<div class="cr"><div><b>${esc(p.name)}</b><div class="muted">${money(p.price)} × ${x.q}</div></div><div class="q"><button onclick="qty('${x.id}',-1)">−</button>${x.q}<button onclick="qty('${x.id}',1)">+</button></div></div>`}).join("")||'<div class="empty">Cart is empty.</div>';
+ const c=calc();$("sub").textContent=money(c.sub);$("dis").textContent=money(c.dis);$("txt").textContent=money(c.tx);$("tot").textContent=money(c.total)}
+function checkout(){if(!cart.length)return;const c=calc(),s={id:crypto.randomUUID(),receipt:"R-"+Date.now().toString().slice(-8),date:new Date().toISOString(),payment:pay,total:c.total,discount:c.dis,tax:c.tx,cust:$("cs").value,by:me.u,items:cart.map(x=>{const p=P(x.id);p.stock-=x.q;return{id:p.id,name:p.name,price:p.price,cost:p.cost||0,qty:x.q}})};
+ S.sales.push(s);save();cart=[];$("disc").value=0;$("taxp").value=0;R();receipt(s.id)}
+const rtxt=s=>[S.cfg.name,"=".repeat(30),"Receipt: "+s.receipt,new Date(s.date).toLocaleString(),"-".repeat(30),...s.items.map(i=>`${i.name}\n${i.qty} x ${money(i.price)} = ${money(i.qty*i.price)}`),"-".repeat(30),"Discount: "+money(s.discount),"Tax: "+money(s.tax),"TOTAL: "+money(s.total),"Payment: "+s.payment,"Thank you!"].join("\n");
+function receipt(id){const s=S.sales.find(x=>x.id===id),c=S.cust.find(x=>x.id===s.cust);md(`<div class="mh"><h3>Receipt</h3><button class="x" onclick="cm()">×</button></div><div class="rcp">${esc(rtxt(s))}</div><br><button class="btn gr" onclick="waModal('${c?c.id:""}',${esc(JSON.stringify(rtxt(s))).replace(/'/g,"&#39;")})">Send via WhatsApp</button>`)}
+function rProd(){const q=$("prs").value.toLowerCase();$("ptb").innerHTML=tr(S.prod.filter(p=>(p.name+p.category).toLowerCase().includes(q)).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.category)}</td><td>${money(p.price)}</td><td>${money(p.cost)}</td><td>${p.stock} <span class="bg ${p.stock<=5?"lo":""}">${p.stock<=5?"Low":"OK"}</span></td><td><button class="btn" onclick="prodModal('${p.id}')">Edit</button> <button class="btn rd" onclick="delProd('${p.id}')">Delete</button></td></tr>`),6)}
+function prodModal(id){const p=id?P(id):{name:"",category:"General",price:0,cost:0,stock:0},f=(i,l,v,t="text")=>`<div class="f"><label>${l}</label><input id="${i}" type="${t}" value="${esc(v)}"></div>`;
+ md(`<div class="mh"><h3>${id?"Edit":"Add"} product</h3><button class="x" onclick="cm()">×</button></div>${f("mN","Name",p.name)}<div class="row">${f("mC","Category",p.category)}${f("mS","Stock",p.stock,"number")}</div><div class="row">${f("mP","Selling price",p.price,"number")}${f("mK","Cost price",p.cost||0,"number")}</div><button class="btn dk" onclick="saveProd('${id||""}')">Save</button>`)}
+function saveProd(id){const n=$("mN").value.trim();if(!n)return;const o={id:id||"p"+Date.now(),name:n,category:$("mC").value.trim()||"General",price:+$("mP").value||0,cost:+$("mK").value||0,stock:+$("mS").value||0};id?S.prod[S.prod.findIndex(p=>p.id===id)]=o:S.prod.push(o);save();cm();R()}
+function delProd(id){if(confirm("Delete product?")){S.prod=S.prod.filter(p=>p.id!==id);save();R()}}
+function rBuys(){$("btb").innerHTML=tr(S.buys.slice().reverse().map(b=>`<tr><td>${new Date(b.ts).toLocaleDateString()}</td><td>${b.type}</td><td>${esc(b.name)}</td><td>${b.qty||"-"}</td><td>${money(b.cost)}</td><td><button class="btn rd" onclick="delBuy('${b.id}')">Delete</button></td></tr>`),6)}
+function buyModal(){md(`<div class="mh"><h3>Purchase / expense</h3><button class="x" onclick="cm()">×</button></div><div class="f"><label>Type</label><select id="bT"><option>Stock purchase</option><option>Expense</option></select></div><div class="f"><label>Restock product (optional, adds to stock)</label><select id="bP"><option value="">— none —</option>${S.prod.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></div><div class="f"><label>Description</label><input id="bN" placeholder="e.g. Coffee beans, rent, electricity"></div><div class="row"><div class="f"><label>Quantity</label><input id="bQ" type="number" value="1"></div><div class="f"><label>Total cost</label><input id="bC" type="number" value="0"></div></div><button class="btn dk" onclick="saveBuy()">Save</button>`)}
+function saveBuy(){const pr=P($("bP").value),q=+$("bQ").value||0,cost=+$("bC").value||0,n=$("bN").value.trim()||(pr?pr.name:"");if(!n||cost<=0)return;
+ if(pr&&$("bT").value==="Stock purchase"&&q>0){pr.stock+=q;pr.cost=cost/q}S.buys.push({id:"b"+Date.now(),ts:Date.now(),type:$("bT").value,name:n,qty:q,cost});save();cm();R()}
+function delBuy(id){if(confirm("Delete entry?")){S.buys=S.buys.filter(b=>b.id!==id);save();R()}}
+function rSales(){const q=$("ss").value.toLowerCase();$("stb").innerHTML=tr(S.sales.slice().reverse().filter(s=>(s.receipt+s.payment).toLowerCase().includes(q)).map(s=>`<tr><td>${new Date(s.date).toLocaleString()}</td><td>${s.receipt}</td><td>${s.items.reduce((a,i)=>a+i.qty,0)}</td><td>${s.payment}</td><td><b>${money(s.total)}</b></td><td><button class="btn" onclick="receipt('${s.id}')">View</button></td></tr>`),6)}
+function rCust(){$("ctb").innerHTML=tr(S.cust.map(c=>{const ss=S.sales.filter(s=>s.cust===c.id);return`<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone||"-")}</td><td>${ss.length}</td><td>${money(ss.reduce((a,s)=>a+s.total,0))}</td><td><button class="btn gr" onclick="waModal('${c.id}')">WhatsApp</button> <button class="btn rd" onclick="delCust('${c.id}')">Delete</button></td></tr>`}),5)}
+function custModal(){md(`<div class="mh"><h3>Add customer</h3><button class="x" onclick="cm()">×</button></div><div class="f"><label>Name</label><input id="cN"></div><div class="f"><label>Phone (WhatsApp)</label><input id="cP" placeholder="0812xxxxxxx"></div><button class="btn dk" onclick="saveCust()">Save</button>`)}
+function saveCust(){const n=$("cN").value.trim();if(!n)return;S.cust.push({id:"c"+Date.now(),name:n,phone:$("cP").value.trim()});save();cm();R()}
+function delCust(id){if(confirm("Delete customer?")){S.cust=S.cust.filter(c=>c.id!==id);save();R()}}
+function saveCfg(){Object.assign(S.cfg,{name:$("sName").value.trim()||"BusinessOS Store",cur:$("sCur").value,cc:$("sCc").value.replace(/\D/g,"")||"62",owner:$("sOwn").value.trim()});save();R()}
+function reset(){if(confirm("Erase all products, sales, purchases and customers? Accounts are kept.")){const a=S.acc,c=S.cfg;S=Object.assign(seed(),{acc:a,cfg:c});save();R()}}
+/* ---------- WhatsApp ---------- */
+const TPL={thanks:(c,n)=>`Hi ${c}! Thank you for shopping at ${n} 😊 We hope to see you again soon.`,promo:(c,n)=>`Hi ${c}! ${n} has a special offer this week — drop by and enjoy a discount on your favourites! 🎉`,remind:(c,n)=>`Hi ${c}, a friendly reminder from ${n} about your pending payment. Please let us know if you have any questions. Thank you!`,restock:(c,n)=>`Hi ${c}! Good news — new stock just arrived at ${n}. Come take a look! 🛍️`};
+function waModal(cid,text){const c=S.cust.find(x=>x.id===cid);window._wt=text;
+ md(`<div class="mh"><h3>WhatsApp message</h3><button class="x" onclick="cm()">×</button></div><div class="f"><label>Phone</label><input id="wP" value="${esc(c?.phone||"")}" placeholder="0812xxxxxxx"></div><div class="f"><label>Template</label><select id="wT" onchange="wTpl()"><option value="">${text?"Current message":"Choose…"}</option><option value="thanks">Thank you</option><option value="promo">Promo</option><option value="remind">Payment reminder</option><option value="restock">New stock</option></select></div><div class="f"><label>Message (editable)</label><textarea id="wM" rows="8">${esc(text||"")}</textarea></div><div class="row"><button class="btn gr" onclick="waGo()">Open WhatsApp</button><button class="btn" onclick="waCopy()">Copy</button></div><input type="hidden" id="wN" value="${esc(c?.name||"there")}">`)}
+function wTpl(){const k=$("wT").value;$("wM").value=k?TPL[k]($("wN").value,S.cfg.name):window._wt||""}
+function waNum(p){let n=String(p).replace(/\D/g,"");if(n.startsWith("0"))n=S.cfg.cc+n.slice(1);return n}
+function waGo(){const n=waNum($("wP").value);if(n.length<8)return alert("Enter a valid phone number.");window.open(`https://wa.me/${n}?text=${encodeURIComponent($("wM").value)}`,"_blank","noopener")}
+async function waCopy(){try{await navigator.clipboard.writeText($("wM").value);alert("Copied.")}catch(e){$("wM").select()}}
+function sumText(){const A=agg(period);return`📊 ${S.cfg.name} — ${PER[period]}\nSales: ${money(A.rev)} (${A.n} transactions)\nGross profit: ${money(A.gross)}\nExpenses: ${money(A.opex)}\n${A.profit<0?"Net LOSS":"Net profit"}: ${money(A.profit)}\nBought/spent: ${money(A.spent)}\nTop: ${A.top.slice(0,3).map(([n,x])=>n+" ×"+x.q).join(", ")||"-"}`}
+function waSummary(t){waModal("",t||sumText());$("wP").value=S.cfg.owner}
+/* ---------- AI ---------- */
+async function ask(prompt,onText){
+ if(hasC){const s=await claude.use("sample").catch(()=>null);if(s){const r=await s(prompt,{onText:({text})=>onText(text),cache:false});return r.text}}
+ if(!ai.key)throw new Error("Add your Anthropic API key in Settings.");
+ const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ai.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:ai.model,max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+ const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);return j.content.map(c=>c.text||"").join("")}
+async function runAI(){const box=$("aiBox"),out=$("aiTxt");box.classList.remove("hide");out.textContent="Asking Claude…";
+ const A=agg(period),P2=PREV[period]?agg(PREV[period]):null,data={store:S.cfg.name,currency:S.cfg.cur,period:PER[period],sales:A.rev,transactions:A.n,avgOrder:A.avg,costOfGoods:A.cogs,grossProfit:A.gross,operatingExpenses:A.opex,netProfitOrLoss:A.profit,totalSpentOnPurchases:A.spent,cashResult:A.cash,paymentMix:A.pm,topItems:A.top.slice(0,8).map(([n,x])=>({item:n,qty:x.q,revenue:x.r})),itemsBought:A.bs.map(b=>({type:b.type,item:b.name,qty:b.qty,cost:b.cost})),lowStock:S.prod.filter(p=>p.stock<=5).map(p=>({item:p.name,stock:p.stock})),previousPeriod:P2&&{sales:P2.rev,profit:P2.profit,transactions:P2.n}};
+ try{aiText=await ask(`You are a friendly business analyst for a small shop. Using ONLY this JSON, write a concise plain-text summary (no markdown symbols) with short sections: Sales, Profit/Loss, Items bought & spending, Stock warnings, and 3 practical suggestions. State clearly if the period shows a loss. Do not invent numbers.\n\n${JSON.stringify(data)}`,t=>{aiText=t;out.textContent=t});out.textContent=aiText}catch(e){out.textContent="AI unavailable: "+(e.message||e.code||"error")}}
+/* ---------- misc ---------- */
+const csv=()=>"Date,Receipt,Payment,Total,Cost\n"+S.sales.map(s=>`${s.date},${s.receipt},${s.payment},${s.total},${s.items.reduce((a,i)=>a+(i.cost||0)*i.qty,0)}`).join("\n");
+async function exp(name,data,l){const d=hasC?await claude.use("downloads").catch(()=>null):null;if(d){try{await d.save({filename:name,data})}catch(e){}return}
+ if(!hasC){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data]));a.download=name;a.click();return}md(`<div class="mh"><h3>${l} export</h3><button class="x" onclick="cm()">×</button></div><textarea rows="12" readonly>${esc(data)}</textarea>`)}
+function md(h){$("modal").innerHTML=h;$("mb").classList.add("show")}function cm(){$("mb").classList.remove("show")}
+tab("in");try{const u=sessionStorage.getItem("bos_u");if(u)ready.then(()=>{const a=S.acc.find(x=>x.u===u);if(a)enter(a)})}catch(e){}
+</script>
+</body>
+</html>
